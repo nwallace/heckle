@@ -1,7 +1,32 @@
 (ns heckle.core-test
-  (:require [clojure.test :refer :all]
+  (:require [midje.sweet :refer :all]
             [heckle.core :refer :all]))
 
-(deftest a-test
-  (testing "FIXME, I fail."
-    (is (= 0 1))))
+(defn email-presence-validation [data]
+  (when (empty? (get data :email "")) [:email "is required"]))
+(defn email-format-validation [data]
+  (when-not (re-find #".@." (get data :email "")) [:email "is invalid"]))
+(defn password-presence-validation [data]
+  (when (empty? (get data :password "")) [:password "is required"]))
+
+(facts "about 'validate"
+       (fact "it returns no errors when no validations are given"
+             (validate [] {}) => {}
+             (validate [] {:data "value"}) => {})
+       (fact "it returns no errors when the data passes all validations"
+             (validate [email-presence-validation]
+                       {:email "any non-empty string"}) => {}
+             (validate [email-presence-validation
+                        email-format-validation]
+                       {:email "me@example.com"}) => {}
+             (validate [email-presence-validation
+                        password-presence-validation]
+                       {:email "me@example.com" :password "pass"}) => {})
+       (fact "it returns error messages grouped by error key when the data"
+             (validate [email-presence-validation]
+                       {}) => {:email #{"is required"}}
+             (validate [email-presence-validation
+                        email-format-validation
+                        password-presence-validation]
+                       {}) => {:email #{"is required" "is invalid"}
+                               :password #{"is required"}}))
