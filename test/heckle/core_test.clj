@@ -30,3 +30,17 @@
                         password-presence-validation]
                        {}) => {:email #{"is required" "is invalid"}
                                :password #{"is required"}}))
+
+(facts "about 'make-claim"
+       (let [only-even (make-claim even? :number "must be even")]
+         (fact "it returns a function that returns `nil` when called with data that passes the predicate"
+               (only-even 2) => nil)
+         (fact "it returns a function that returns an error tuple with the given key and message when called with data that fails the predicate"
+               (only-even 1) => [:number "must be even"])))
+
+(facts "about 'make-denial"
+       (let [only-even (make-denial odd? :number "must be even")]
+         (fact "it returns a function that returns `nil` when called with data that passes the predicate"
+               (only-even 2) => nil)
+         (fact "it returns a function that returns an error tuple with the given key and message when called with data that fails the predicate"
+               (only-even 1) => [:number "must be even"])))
