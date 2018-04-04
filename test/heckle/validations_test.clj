@@ -48,3 +48,33 @@
              ((matches #"[a-z]" :password) {:password "PASS"}) => [:password "is invalid"])
        (fact "is uses the specified error message if one is given"
              ((matches #"." :password "Ohs nos!") {}) => [:password "Ohs nos!"]))
+
+(facts "about 'length-is-at-least"
+       (fact "it passes if the specified value is at least as long as the given length"
+             ((length-is-at-least 2 :username) {:username "me"}) => nil
+             ((length-is-at-least 2 :username) {:username "itsame"}) => nil
+             ((length-is-at-least 5 :username) {:username "itsame"}) => nil)
+       (fact "it fails if the specified key is not in the given data"
+             ((length-is-at-least 2 :username) {}) => [:username "must be at least 2 characters"])
+       (fact "it fails if the specified key is nil in the given data"
+             ((length-is-at-least 2 :username) {:username nil}) => [:username "must be at least 2 characters"])
+       (fact "it fails if the specified value is shorter than the given length"
+             ((length-is-at-least 1 :username) {:username ""}) => [:username "must be at least 1 character"]
+             ((length-is-at-least 2 :username) {:username "x"}) => [:username "must be at least 2 characters"]
+             ((length-is-at-least 3 :username) {:username "me"}) => [:username "must be at least 3 characters"])
+       (fact "is uses the specified error message if one is given"
+             ((length-is-at-least 2 :username "Ohs nos!") {}) => [:username "Ohs nos!"]))
+
+(facts "about 'length-is-no-more-than"
+       (fact "it passes if the specified value is no longer than the given length"
+             ((length-is-no-more-than 2 :username) {:username "me"}) => nil
+             ((length-is-no-more-than 2 :username) {:username "x"}) => nil)
+       (fact "it passes if the specified value is not given"
+             ((length-is-no-more-than 2 :username) {:username ""}) => nil
+             ((length-is-no-more-than 2 :username) {:username nil}) => nil
+             ((length-is-no-more-than 2 :username) {}) => nil)
+       (fact "it fails if the specified value is longer than the given length"
+             ((length-is-no-more-than 1 :username) {:username "me"}) => [:username "must be less than 2 characters"]
+             ((length-is-no-more-than 2 :username) {:username "itsame"}) => [:username "must be less than 3 characters"])
+       (fact "is uses the specified error message if one is given"
+             ((length-is-no-more-than 2 :username "Ohs nos!") {:username "itsame"}) => [:username "Ohs nos!"]))
