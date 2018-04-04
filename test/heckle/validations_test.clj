@@ -18,3 +18,17 @@
              ((is-present :skills) {:skills []}) => nil)
        (fact "it uses the specified error message if one is given"
              ((is-present :name "Ohs nos!") {:name ""}) => [:name "Ohs nos!"]))
+
+;; string validations
+(facts "about 'matches"
+       (fact "it passes if the specified value matches the specified regex"
+             ((matches #"[a-z]" :password) {:password "pass"}) => nil
+             ((matches #"^\$\d+\.\d\d$" :price) {:price "$1.95"}) => nil)
+       (fact "it fails if the specified key is not in the given data"
+             ((matches #"." :password) {}) => [:password "is invalid"])
+       (fact "it fails if the specified key is nil in the given data"
+             ((matches #"." :password) {:password nil}) => [:password "is invalid"])
+       (fact "it fails if the specified value does not match the specified regex"
+             ((matches #"[a-z]" :password) {:password "PASS"}) => [:password "is invalid"])
+       (fact "is uses the specified error message if one is given"
+             ((matches #"." :password "Ohs nos!") {}) => [:password "Ohs nos!"]))
