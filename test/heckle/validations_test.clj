@@ -19,6 +19,22 @@
        (fact "it uses the specified error message if one is given"
              ((is-present :name "Ohs nos!") {:name ""}) => [:name "Ohs nos!"]))
 
+(facts "about 'is-one-of"
+       (fact "it passes if the specified value is one of the given values"
+             ((is-one-of #{:red :blue} :color) {:color :red}) => nil
+             ((is-one-of #{:red :blue} :color) {:color :blue}) => nil)
+       (fact "it fails if the specified key is not in the given data"
+             ((is-one-of #{:red :blue} :color) {}) => [:color "must be either :red, or :blue"])
+       (fact "it fails if the specified key is nil in the given data"
+             ((is-one-of #{:red :blue} :color) {:color nil}) => [:color "must be either :red, or :blue"])
+       (fact "it fails if the specified value is not one of the given values"
+             ((is-one-of #{:red :blue} :color) {:color :green}) => [:color "must be either :red, or :blue"])
+       (fact "it uses the specified error message if one is given"
+             ((is-one-of #{:red :blue} :color "Ohs nos!") {}) => [:color "Ohs nos!"])
+       (fact "it works when given a vector instead of a set"
+             ((is-one-of [:red :blue] :color) {:color :red}) => nil
+             ((is-one-of [:red :blue] :color) {:color :green}) => [:color "must be either :red, or :blue"]))
+
 ;; string validations
 (facts "about 'matches"
        (fact "it passes if the specified value matches the specified regex"

@@ -1,5 +1,14 @@
 (ns heckle.validations
-  (:require [heckle.core :refer [make-claim make-denial]]))
+  (:require [heckle.core :refer [make-claim make-denial]]
+            [clojure.string :as str]))
+
+(defn- to-sentence
+  ([coll] (to-sentence coll " and "))
+  ([coll conjunction]
+   (str/join conjunction
+             (if-let [for-commas (seq (drop-last coll))]
+               [(str/join ", " for-commas) (last coll)]
+               [(last coll)]))))
 
 ;; general validations
 (defn is-present
@@ -17,3 +26,10 @@
                           #(when-let [value (get %1 key "")]
                              (re-find regex value))
                           key error-msg)))
+
+(defn is-one-of
+  ([collection key] (is-one-of collection key
+                               (str "must be either " (to-sentence collection ", or "))))
+  ([collection key error-msg] (make-claim
+                               #(some #{(get %1 key)} collection)
+                               key error-msg)))
