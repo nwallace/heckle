@@ -9,3 +9,4 @@ pom.xml.asc
 /.nrepl-history
 /.nrepl-port
 .#*
+gpg.edn
