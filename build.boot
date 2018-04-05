@@ -10,7 +10,7 @@
 (task-options!
  pom {:project     project
       :version     version
-      :description "The CLJ/CLJS validation library you deserve"
+      :description "The Clojure(Script) validation library you deserve"
       :url         "https://github.com/nwallace/heckle"
       :scm         {:url "https://github.com/nwallace/heckle"}
       :license     {"MIT License"
