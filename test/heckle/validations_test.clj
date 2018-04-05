@@ -1,6 +1,7 @@
 (ns heckle.validations-test
   (:require [heckle.validations :refer :all]
-            [midje.sweet :refer :all]))
+            [midje.sweet :refer :all]
+            [clojure.instant :refer [read-instant-date]]))
 
 ;; general validations
 (facts "about 'is-present"
@@ -102,4 +103,85 @@
              ((is-confirmed :interests)
               {:interests ["Cooking" "Running"] :interests-confirmation ["Cooking" "Cycling"]}) => [:interests-confirmation "does not match"]
              ((is-confirmed :nil) {:nil nil :nil-confirmation nil}) => nil
-             ((is-confirmed :nil) {:nil nil :nil-confirmation 1}) => [:nil-confirmation "does not match"]))
+             ((is-confirmed :nil) {:nil nil :nil-confirmation 1}) => [:nil-confirmation "does not match"]
+             ((is-confirmed :nil) {}) => [:nil-confirmation "does not match"]))
+
+;; comparable validations
+(facts "about 'is-at-least"
+       (fact "it passes if the specified value is greater than or equal to that given"
+             ((is-at-least 21 :age) {:age 21}) => nil
+             ((is-at-least 21 :age) {:age 50}) => nil)
+       (fact "it fails if the specified value is less than that given"
+             ((is-at-least 21 :age) {:age 20}) => [:age "must be at least 21"]
+             ((is-at-least 21 :age) {:age 0}) => [:age "must be at least 21"])
+       (fact "it fails if the specified key is not in the given data"
+             ((is-at-least 21 :age) {}) => [:age "must be at least 21"])
+       (fact "it uses the specified error message if one is given"
+             ((is-at-least 21 :age "Ohs nos!") {}) => [:age "Ohs nos!"])
+       (fact "it works for any comparable data type"
+             ((is-at-least "l" :char) {:char "m"}) => nil
+             ((is-at-least "l" :char) {:char "k"}) => [:char "must be at least l"]
+             ((is-at-least (read-instant-date "2018-01-01") :date) {:date (read-instant-date "2018-01-01")})
+               => nil
+             ((is-at-least (read-instant-date "2018-01-01") :date) {:date (read-instant-date "2017-12-31")})
+               => [:date (str "must be at least " (read-instant-date "2018-01-01"))]))
+
+(facts "about 'is-greater-than"
+       (fact "it passes if the specified value is greater than that given"
+             ((is-greater-than 20 :age) {:age 21}) => nil
+             ((is-greater-than 20 :age) {:age 50}) => nil)
+       (fact "it fails if the specified value is less than or equal to that given"
+             ((is-greater-than 20 :age) {:age 20}) => [:age "must be greater than 20"]
+             ((is-greater-than 20 :age) {:age 0}) => [:age "must be greater than 20"])
+       (fact "it fails if the specified key is not in the given data"
+             ((is-greater-than 20 :age) {}) => [:age "must be greater than 20"])
+       (fact "it uses the specified error message if one is given"
+             ((is-greater-than 20 :age "Ohs nos!") {}) => [:age "Ohs nos!"])
+       (fact "it works for any comparable data type"
+             ((is-greater-than "k" :char) {:char "l"}) => nil
+             ((is-greater-than "k" :char) {:char "k"}) => [:char "must be greater than k"]
+             ((is-greater-than "k" :char) {:char "k"}) => [:char "must be greater than k"]
+             ((is-greater-than (read-instant-date "2018-01-01") :date) {:date (read-instant-date "2018-01-02")})
+               => nil
+             ((is-greater-than (read-instant-date "2018-01-01") :date) {:date (read-instant-date "2018-01-01")})
+               => [:date (str "must be greater than " (read-instant-date "2018-01-01"))]))
+
+(facts "about 'is-less-than"
+       (fact "it passes if the specified value is less than that given"
+             ((is-less-than 21 :age) {:age 20}) => nil
+             ((is-less-than 21 :age) {:age 5}) => nil)
+       (fact "it fails if the specified value is greater than or equal to that given"
+             ((is-less-than 21 :age) {:age 50}) => [:age "must be less than 21"]
+             ((is-less-than 21 :age) {:age 21}) => [:age "must be less than 21"])
+       (fact "it fails if the specified key is not in the given data"
+             ((is-less-than 21 :age) {}) => [:age "must be less than 21"])
+       (fact "it uses the specified error message if one is given"
+             ((is-less-than 21 :age "Ohs nos!") {}) => [:age "Ohs nos!"])
+       (fact "it works for any comparable data type"
+             ((is-less-than "l" :char) {:char "k"}) => nil
+             ((is-less-than "l" :char) {:char "l"}) => [:char "must be less than l"]
+             ((is-less-than "l" :char) {:char "z"}) => [:char "must be less than l"]
+             ((is-less-than (read-instant-date "2018-01-02") :date) {:date (read-instant-date "2018-01-01")})
+               => nil
+             ((is-less-than (read-instant-date "2018-01-01") :date) {:date (read-instant-date "2018-01-01")})
+               => [:date (str "must be less than " (read-instant-date "2018-01-01"))]))
+
+(facts "about 'is-no-more-than"
+       (fact "it passes if the specified value is less than or equal to that given"
+             ((is-no-more-than 21 :age) {:age 5}) => nil
+             ((is-no-more-than 21 :age) {:age 21}) => nil)
+       (fact "it fails if the specified value is greater than that given"
+             ((is-no-more-than 21 :age) {:age 50}) => [:age "must be no more than 21"]
+             ((is-no-more-than 21 :age) {:age 22}) => [:age "must be no more than 21"])
+       (fact "it fails if the specified key is not in the given data"
+             ((is-no-more-than 21 :age) {}) => [:age "must be no more than 21"])
+       (fact "it uses the specified error message if one is given"
+             ((is-no-more-than 21 :age "Ohs nos!") {}) => [:age "Ohs nos!"])
+       (fact "it works for any comparable data type"
+             ((is-no-more-than "l" :char) {:char "l"}) => nil
+             ((is-no-more-than "l" :char) {:char "m"}) => [:char "must be no more than l"]
+             ((is-no-more-than "l" :char) {:char "z"}) => [:char "must be no more than l"]
+             ((is-no-more-than (read-instant-date "2018-01-01") :date) {:date (read-instant-date "2018-01-01")})
+               => nil
+             ((is-no-more-than (read-instant-date "2018-01-01") :date) {:date (read-instant-date "2018-01-02")})
+               => [:date (str "must be no more than " (read-instant-date "2018-01-01"))]))

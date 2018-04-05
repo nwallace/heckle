@@ -61,3 +61,31 @@
                      (contains? %1 confirmation-key)
                      (= (key %1) (confirmation-key %1)))
                confirmation-key error-msg)))
+
+(defn is-at-least
+  ([bound key] (is-at-least bound key (str "must be at least " bound)))
+  ([bound key error-msg] (make-claim
+                          #(and (contains? %1 key)
+                                (not (pos? (compare bound (get %1 key)))))
+                          key error-msg)))
+
+(defn is-greater-than
+  ([bound key] (is-greater-than bound key (str "must be greater than " bound)))
+  ([bound key error-msg] (make-claim
+                          #(and (contains? %1 key)
+                                (neg? (compare bound (get %1 key))))
+                          key error-msg)))
+
+(defn is-less-than
+  ([bound key] (is-less-than bound key (str "must be less than " bound)))
+  ([bound key error-msg] (make-claim
+                          #(and (contains? %1 key)
+                                (pos? (compare bound (get %1 key))))
+                          key error-msg)))
+
+(defn is-no-more-than
+  ([bound key] (is-no-more-than bound key (str "must be no more than " bound)))
+  ([bound key error-msg] (make-claim
+                          #(and (contains? %1 key)
+                                (not (neg? (compare bound (get %1 key)))))
+                          key error-msg)))
