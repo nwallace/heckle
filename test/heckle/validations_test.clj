@@ -25,16 +25,42 @@
              ((is-one-of #{:red :blue} :color) {:color :red}) => nil
              ((is-one-of #{:red :blue} :color) {:color :blue}) => nil)
        (fact "it fails if the specified key is not in the given data"
-             ((is-one-of #{:red :blue} :color) {}) => [:color "must be either :red, or :blue"])
+             ((is-one-of #{:red :blue} :color) {}) => [:color "must be either :red or :blue"])
        (fact "it fails if the specified key is nil in the given data"
-             ((is-one-of #{:red :blue} :color) {:color nil}) => [:color "must be either :red, or :blue"])
+             ((is-one-of #{:red :blue} :color) {:color nil}) => [:color "must be either :red or :blue"])
        (fact "it fails if the specified value is not one of the given values"
-             ((is-one-of #{:red :blue} :color) {:color :green}) => [:color "must be either :red, or :blue"])
+             ((is-one-of #{:red :blue} :color) {:color :green}) => [:color "must be either :red or :blue"])
        (fact "it uses the specified error message if one is given"
              ((is-one-of #{:red :blue} :color "Ohs nos!") {}) => [:color "Ohs nos!"])
        (fact "it works when given a vector instead of a set"
              ((is-one-of [:red :blue] :color) {:color :red}) => nil
-             ((is-one-of [:red :blue] :color) {:color :green}) => [:color "must be either :red, or :blue"]))
+             ((is-one-of [:red :blue] :color) {:color :green}) => [:color "must be either :red or :blue"]))
+
+(facts "about 'is-confirmed"
+       (fact "it passes if the specified value has a confirmation value with the same value"
+             ((is-confirmed :password) {:password "pass" :password-confirmation "pass"}) => nil)
+       (fact "it fails if the specified value has a confirmation value with a different value"
+             ((is-confirmed :password) {:password "pass" :password-confirmation "psas"}) => [:password-confirmation "does not match"])
+       (fact "it fails if the specified value has no confirmation field"
+             ((is-confirmed :password) {:password "pass"}) => [:password-confirmation "does not match"])
+       (fact "it fails if the specified field is not present"
+             ((is-confirmed :password) {:password-confirmation "pass"}) => [:password-confirmation "does not match"])
+       (fact "is uses a custom confirmation field name if one is given"
+             ((is-confirmed :password :pwd-conf) {:password "pass" :pwd-conf "pass"}) => nil
+             ((is-confirmed :password :pwd-conf) {:password "pass" :pwd-conf "psas"}) => [:pwd-conf "does not match"])
+       (fact "it uses a specified error message if one is given"
+             ((is-confirmed :pwd :pwdc "Ohs nos!") {:pwd "pass" :pwdc "pass"}) => nil
+             ((is-confirmed :pwd :pwdc "Ohs nos!") {:pwd "pass" :pwdc "psas"}) => [:pwdc "Ohs nos!"])
+       (fact "it works for values other than strings"
+             ((is-confirmed :age) {:age 24 :age-confirmation 24}) => nil
+             ((is-confirmed :age) {:age 24 :age-confirmation 25}) => [:age-confirmation "does not match"]
+             ((is-confirmed :interests)
+              {:interests ["Cooking" "Running"] :interests-confirmation ["Cooking" "Running"]}) => nil
+             ((is-confirmed :interests)
+              {:interests ["Cooking" "Running"] :interests-confirmation ["Cooking" "Cycling"]}) => [:interests-confirmation "does not match"]
+             ((is-confirmed :nil) {:nil nil :nil-confirmation nil}) => nil
+             ((is-confirmed :nil) {:nil nil :nil-confirmation 1}) => [:nil-confirmation "does not match"]
+             ((is-confirmed :nil) {}) => [:nil-confirmation "does not match"]))
 
 ;; string validations
 (facts "about 'matches"
@@ -79,32 +105,6 @@
              ((length-is-no-more-than 2 :username) {:username "itsame"}) => [:username "must be less than 3 characters"])
        (fact "is uses the specified error message if one is given"
              ((length-is-no-more-than 2 :username "Ohs nos!") {:username "itsame"}) => [:username "Ohs nos!"]))
-
-(facts "about 'is-confirmed"
-       (fact "it passes if the specified value has a confirmation value with the same value"
-             ((is-confirmed :password) {:password "pass" :password-confirmation "pass"}) => nil)
-       (fact "it fails if the specified value has a confirmation value with a different value"
-             ((is-confirmed :password) {:password "pass" :password-confirmation "psas"}) => [:password-confirmation "does not match"])
-       (fact "it fails if the specified value has no confirmation field"
-             ((is-confirmed :password) {:password "pass"}) => [:password-confirmation "does not match"])
-       (fact "it fails if the specified field is not present"
-             ((is-confirmed :password) {:password-confirmation "pass"}) => [:password-confirmation "does not match"])
-       (fact "is uses a custom confirmation field name if one is given"
-             ((is-confirmed :password :pwd-conf) {:password "pass" :pwd-conf "pass"}) => nil
-             ((is-confirmed :password :pwd-conf) {:password "pass" :pwd-conf "psas"}) => [:pwd-conf "does not match"])
-       (fact "it uses a specified error message if one is given"
-             ((is-confirmed :pwd :pwdc "Ohs nos!") {:pwd "pass" :pwdc "pass"}) => nil
-             ((is-confirmed :pwd :pwdc "Ohs nos!") {:pwd "pass" :pwdc "psas"}) => [:pwdc "Ohs nos!"])
-       (fact "it works for values other than strings"
-             ((is-confirmed :age) {:age 24 :age-confirmation 24}) => nil
-             ((is-confirmed :age) {:age 24 :age-confirmation 25}) => [:age-confirmation "does not match"]
-             ((is-confirmed :interests)
-              {:interests ["Cooking" "Running"] :interests-confirmation ["Cooking" "Running"]}) => nil
-             ((is-confirmed :interests)
-              {:interests ["Cooking" "Running"] :interests-confirmation ["Cooking" "Cycling"]}) => [:interests-confirmation "does not match"]
-             ((is-confirmed :nil) {:nil nil :nil-confirmation nil}) => nil
-             ((is-confirmed :nil) {:nil nil :nil-confirmation 1}) => [:nil-confirmation "does not match"]
-             ((is-confirmed :nil) {}) => [:nil-confirmation "does not match"]))
 
 ;; comparable validations
 (facts "about 'is-at-least"

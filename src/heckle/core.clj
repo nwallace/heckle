@@ -22,8 +22,8 @@ Example:
     sign-up-validations
     {:email \"\" :password \"pass\"})
   ; => {:email #{\"is required\"}
-        :password #{\"must conatin at least one capital letter\"
-                    \"must contain at least one number\"}}
+  ;     :password #{\"must conatin at least one capital letter\"
+  ;                 \"must contain at least one number\"}}
 
   (heckle.core/validate
     sign-up-validations
