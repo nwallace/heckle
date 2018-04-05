@@ -5,6 +5,7 @@ The Clojure(Script) validation library you deserve.
 > Heckle is a *flexible*, *function-oriented*, and *composable* validations library for Clojure and ClojureScript.
 
 [![Build Status](https://travis-ci.org/nwallace/heckle.svg)](https://travis-ci.org/nwallace/heckle)
+[![Clojars Project](https://img.shields.io/clojars/v/heckle.svg)](https://clojars.org/heckle)
 
 ## Why another validation library?
 
