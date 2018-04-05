@@ -52,3 +52,12 @@
   ([max-length key error-msg] (make-denial
                                #(-> (get %1 key "") count (> max-length))
                                key error-msg)))
+
+(defn is-confirmed
+  ([key] (is-confirmed key (keyword (str (name key) "-confirmation"))))
+  ([key confirmation-key] (is-confirmed key confirmation-key "does not match"))
+  ([key confirmation-key error-msg]
+   (make-claim #(and (contains? %1 key)
+                     (contains? %1 confirmation-key)
+                     (= (key %1) (confirmation-key %1)))
+               confirmation-key error-msg)))
