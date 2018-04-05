@@ -1,0 +1,28 @@
+# Travis CI doesn't support boot out of the box.
+# This script is from the Boot wiki: https://github.com/boot-clj/boot/wiki/Running-Boot-on-CI-systems
+# Travis CI GitHub issue: https://github.com/travis-ci/travis-ci/issues/5982
+
+sudo: false
+language: java
+script: boot midje
+install:
+  - mkdir -p ~/bin
+  - export PATH=~/bin:$PATH
+  # Could use `latest` tag instead of version number
+  - curl -L https://github.com/boot-clj/boot-bin/releases/download/2.5.2/boot.sh -o ~/bin/boot
+  - chmod +x ~/bin/boot
+env:
+  matrix:
+    # Runs tests twice, using Clj 1.7, 1.8 and 1.9
+    - BOOT_CLOJURE_VERSION=1.7.0
+    - BOOT_CLOJURE_VERSION=1.8.0
+    - BOOT_CLOJURE_VERSION=1.9.0
+jdk:
+  - openjdk8
+  - oraclejdk8
+cache:
+  directories:
+  - $HOME/.m2
+  - $HOME/.boot/cache/bin
+  - $HOME/.boot/cache/lib
+  - $HOME/bin
