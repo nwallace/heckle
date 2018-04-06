@@ -1,10 +1,9 @@
-(def project 'heckle)
+(def project 'nwallace/heckle)
 (def version "0.1.0-SNAPSHOT")
 
 (set-env! :resource-paths #{"resources" "src"}
           :source-paths   #{"test"}
-          :dependencies   '[[org.clojure/clojure "RELEASE"]
-                            [midje "1.9.1" :scope "test"]
+          :dependencies   '[[midje "1.9.1" :scope "test"]
                             [zilti/boot-midje "0.2.2-SNAPSHOT" :scope "test"]
                             [adzerk/bootlaces "0.1.13" :scope "test"]])
 
@@ -26,3 +25,8 @@
   "Build and install the project locally."
   []
   (comp (pom) (jar) (install)))
+
+(deftask release
+  "Build the project and push a release to Clojars."
+  []
+  (comp (build-jar) (push-snapshot)))
