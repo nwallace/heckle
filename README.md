@@ -42,24 +42,7 @@ All the hard work is handled by the validation functions you provide. The valida
 
 The simplicity of the validation functions is the key difference between Heckle and other validation libraries. Since they receive the entire input data, they can check one field or many fields at will. The error key they return is independent from the data its validating.
 
-Heckle ships with many standard validation functions built-in, but it's easy to define your own:
-
-```clojure
-(defn can-vote [data]
-  (when (< (:age data) 18)
-    [:voter "is too young to vote"]))
-
-(defn candidate-is-valid [data]
-  (when-not (contains? #{"Clinton" "Stein" "Johnson"} (:candidate data))
-    [:candidate "is a menace to society"]))
-
-(heckle.core/validate [can-vote candidate-is-valid] {:age 28 :candidate "Clinton"})
-  ; => {}
-
-(heckle.core/validate [can-vote candidate-is-valid] {:age 17 :candidate "Trump"})
-  ; => {:voter #{"is too young to vote"}
-  ;     :candidate #{"is a menace to society"}}
-```
+Heckle ships with [many standard validation functions](#built-in-validation-function-builders) built-in, and it's easy to [define your own](#building-your-own-validation-functions).
 
 ## Built-in validation function builders
 
@@ -128,13 +111,44 @@ Let's see the same example as above, but using these helper functions:
   ;                 "must contain at least one number"}}
 ```
 
+## Short-circuiting validations with validation groups
+
+Normally, Heckle will run every validation you give it. This is good if you want your user to know everything they need to fix. But sometimes it's preferable to stop early if you encounter an error and skip subsequent validations.
+
+For this, Heckle provides the function `heck.core/group`. This function takes a list of validation functions and returns a validation function that lazily evaluates the given validations until one returns an error or all have passed.
+
+```clojure
+(def sign-up-validations
+  [(heckle.core/group
+     (heckle.validations/is-present :email)
+     (heckle.validations/matches #".@." :email))
+   (heckle.core/group
+     (heckle.validations/is-present :password)
+     (heckle.validations/length-is-at-least 8 :password)
+     (heckle.core/group
+       (heckle.validations/matches #"[A-Z]" :password "must include a capital letter")
+       (heckle.validations/matches #"[a-z]" :password "must include a lower-case letter")
+       (heckle.validations/matches #"\d" :password "must include a number")))])
+
+(heckle.core/validate sign-up-validations {:email "" :password ""})
+  ; => {:email #{"is required"}
+  ;     :password #{"is required"}}
+(heckle.core/validate sign-up-validations {:email "me@example.com" :password "pass"})
+  ; => {:password #{"must be at least 8 characters" "must include a capital letter"}}
+```
+
+As you can see, groups can be nested as much as you want. That's because groups are just validation functions themselves that execute other validation functions. Functional composition ftw!
+
+This is useful for a number of use cases:
+* You want at most only 1 error message per field
+* You want at most only 1 error message entirely
+* Certain validations are dependent on other validations having passed (like if a validation function will raise an error if given `nil` or a datetime check will raise if the input string doesn't parse)
+* Certain validations are expensive to compute and you'd rather skip them if something else is wrong anyway (e.g. they involve a network call)
+
 ## Roadmap
 
-* Compile to CLJS as well
 * Add collection validations
 * Add a syntax shortcut for setting up multiple validations for the same field
-* Enable validation to short-circuit other validations for invalid field
-* Enable validation to short-circuit all other validations upon first error on any field
 * Allow customization of the default error messages
 * Support records in addition to hash-maps for built-in validation functions
 * Add data type validations?

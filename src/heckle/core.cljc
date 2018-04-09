@@ -1,7 +1,7 @@
 (ns heckle.core)
 
 (defn validate
-  "Check the given validation functions against the given data and return a (possibly empty) collection of errors.
+  "Check the given validation functions against the given data and return a (possibly empty) collection of errors. Error messages are grouped by field.
 
 Arguments:
   - `validations` - a list of validation functions to be checked against the data. Each validation function should return a tuple of `[error-key error-msg]` if the validation failed or `nil` otherwise.
@@ -37,6 +37,30 @@ Example:
               errors))
           {}
           validations))
+
+(defn group
+  "Group dependent validations together so that if one validation fails, the rest will be skipped
+
+Arguments:
+  - `validations` - the list of validation functions
+
+Return value:
+  A validation function that will run the given `validations` and short-circuit on the first error
+
+Example:
+  ```
+  (heckle.core/validate
+    [(group (heckle.core/make-claim (string? (:email %1)) :email \"is required\")
+            (heckle.core/make-claim (re-find #\".@.\" (:email %1)) :email \"is invalid\"))]
+    {:email nil})
+  ; => {:email #{\"is required\"}}
+  ```"
+  [& validations]
+  (fn [data]
+    (->> validations
+         (map #(%1 data))
+         (keep identity)
+         first)))
 
 (defn make-claim
   "A helper function to create a positive validation function.

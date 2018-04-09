@@ -8,6 +8,10 @@
   (when-not (re-find #".@." (get data :email "")) [:email "is invalid"]))
 (defn password-presence-validation [data]
   (when (empty? (get data :password "")) [:password "is required"]))
+(defn fake-db-lookup [email]
+  (get {"me@example.com" {:first-name "Me"}} email))
+(defn email-uniqueness-validation [data]
+  (when (fake-db-lookup (:email data)) [:email "is already taken"]))
 
 (facts "about 'validate"
        (fact "it returns no errors when no validations are given"
@@ -30,6 +34,30 @@
                         password-presence-validation]
                        {}) => {:email #{"is required" "is invalid"}
                                :password #{"is required"}}))
+
+(facts "about 'group"
+       (fact "it returns no errors the group is valid"
+             (validate [] {}) => {}
+             (validate [(group email-presence-validation email-format-validation)]
+                       {:email "me@example.com"}) => {})
+       (fact "it skips the rest of the group once one validation fails"
+             (against-background (fake-db-lookup nil) =throws=> (RuntimeException. "Should be skipped!"))
+             (validate [(group email-presence-validation
+                               email-format-validation
+                               email-uniqueness-validation)]
+                       {}) => {:email #{"is required"}})
+       (fact "groups can be nested indefinitely"
+             (against-background (fake-db-lookup nil) =throws=> (RuntimeException. "Should be skipped!"))
+             (validate [(group password-presence-validation
+                               (group email-presence-validation
+                                      email-format-validation
+                                      email-uniqueness-validation))]
+                       {:email "me@" :password "pass"}) => {:email #{"is invalid"}}
+             (validate [(group password-presence-validation
+                               (group email-presence-validation
+                                      email-format-validation
+                                      email-uniqueness-validation))]
+                       {:email "me@" :password ""}) => {:password #{"is required"}}))
 
 (facts "about 'make-claim"
        (let [only-even (make-claim even? :number "must be even")]
