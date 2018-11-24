@@ -13,6 +13,12 @@
   [number singular]
   (str number " " singular (when (not= number 1) "s")))
 
+(defn- vectorize
+  [item-or-collection]
+  (if (seqable? item-or-collection)
+    item-or-collection
+    [item-or-collection]))
+
 ;; general validations
 (defn is-present
   "Returns a validator fn that ensures the value of the given field is present (not nil and not a blank string).
@@ -258,3 +264,75 @@ Example:
                           #(and (contains? %1 key)
                                 (not (neg? (compare bound (get %1 key)))))
                           key error-msg)))
+
+;; collection validations
+(defn nested
+  "Returns a validator fn that runs the given validations against data nested under the given key or path
+
+Arguments:
+  - `key-or-path` - the key or path to the data to validate
+  - `validations` - the validation functions to run against the specified data
+
+Return value:
+  Returns a validation function that fails if any of the given validation functions fail when run against the specified data
+
+Example:
+  ```
+  ((nested :profile (is-present :name) (is-at-least 18 :age)) {:profile {:name \"Gina\" :age 33}})
+    => []
+  ((nested [:user :profile] (is-present :name) (is-at-least 18 :age))
+      {:user {:profile {:name \"\" :age 15}}})
+    => [[:name \"is required\" [:profile]]
+        [:age \"must be at least 18\" [:profile]]]
+  ```
+ "
+  [key-or-path & validations]
+  (fn [data]
+    (let [path (vectorize key-or-path)
+          item (get-in data path)]
+      (reduce
+       (fn [error-tuples validation]
+         (if-let [error-tuple (validation item)]
+           (conj error-tuples (conj error-tuple path))
+           error-tuples))
+       []
+       validations))))
+
+(defn every
+  "Returns a validator fn that runs the given validations against every item at the specified field
+  Arguments:
+  - `key-or-path` - the key or path to the collection whose members to validate
+  - `validations` - the validation functions to run against each member of the specified collection
+
+Return value:
+  Returns a validation function that fails if any of the given validation functions fail when run against any of the items in the specified collection
+
+Example:
+  ```
+  ((every :users (is-present :name)) {:users [{:name \"Fred\"} {:name \"Rosie\"}]})
+    => []
+  ((every [:users :profile] (is-present :name)) {:users [{:profile {:name \"\"}} {:profile {}}]})
+    => [[:name \"is required\" [:users 0]]
+        [:name \"is required\" [:users 1]]]
+  ((every :users (is-at-least 18 :age))
+     {:users {\"Ben\" {:age 16 :phone \"5551111111\"}
+              \"Carolyn\" {:age 52 :phone \"5552222222\"}
+              \"Dawson\" {:age 9 :phone nil}}]})
+    => [[:age \"must be at least 18\" [:users \"Ben\"]]
+        [:age \"must be at least 18\" [:users \"Dawson\"]]
+        [:email \"is-required\" [:users \"Dawson\"]]]
+  ```"
+  [key-or-path & validations]
+  (fn [data]
+    (let [path (vectorize key-or-path)
+          items (get-in data path)]
+      (reduce-kv
+       (fn [error-tuples key item]
+         (let [item-validation-results (map #(% item) validations)
+               item-errors (keep seq item-validation-results)
+               item-errors-with-paths (map (fn [[field msg subpath]]
+                                             [field msg (concat path [key] subpath)])
+                                           item-errors)]
+           (concat error-tuples item-errors-with-paths)))
+       []
+       items))))

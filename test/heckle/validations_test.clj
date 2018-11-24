@@ -185,3 +185,67 @@
                => nil
              ((is-no-more-than (read-instant-date "2018-01-01") :date) {:date (read-instant-date "2018-01-02")})
                => [:date (str "must be no more than " (read-instant-date "2018-01-01"))]))
+
+(facts "about 'every"
+       (let [validate-every-user (every :users
+                                        (is-present :name)
+                                        (is-present :password)
+                                        (length-is-at-least 8 :password "is too short")
+                                        (matches #"\d" :password "must contain a number"))]
+         (fact "it passes if every value in the specified collection passes the given validations"
+               (validate-every-user {}) => []
+               (validate-every-user {:users []}) => []
+               (validate-every-user {:users {}}) => []
+               (validate-every-user
+                {:users {7 {:name "me" :password "Password1"}
+                         12 {:name "you" :password "Password2"}}}) => []
+               (validate-every-user
+                {:users [{:name "me" :password "Password1"}
+                         {:name "you" :password "Password2"}]}) => [])
+         (fact "is fails if any value in the specified collection fails the given validations"
+               (validate-every-user
+                {:users [{:name "" :password "Password"}
+                         {:name "me" :password "Password1"}
+                         {:password "pass123"}]})
+                 => [[:name "is required" [:users 0]]
+                     [:password "must contain a number" [:users 0]]
+                     [:name "is required" [:users 2]]
+                     [:password "is too short" [:users 2]]]
+               (validate-every-user
+                {:users {5 {:name "" :password "Password"}
+                         7 {:name "me" :password "Password1"}
+                         12 {:password "pass123"}}})
+                 => [[:name "is required" [:users 5]]
+                     [:password "must contain a number" [:users 5]]
+                     [:name "is required" [:users 12]]
+                     [:password "is too short" [:users 12]]])))
+
+(facts "about 'nested"
+       (let [validate-nested-user (nested :user
+                                          (is-present :name)
+                                          (is-present :password)
+                                          (length-is-at-least 8 :password "is too short")
+                                          (matches #"\d" :password "must contain a number"))]
+         (fact "it passes if the value in the specified field passes the given validations"
+               (validate-nested-user {:user {:name "me" :password "Password1"}}) => [])
+         (fact "is fails if any value in the specified collection fails the given validations"
+               (validate-nested-user {})
+                 => [[:name "is required" [:user]]
+                     [:password "is required" [:user]]
+                     [:password "is too short" [:user]]
+                     [:password "must contain a number" [:user]]]
+               (validate-nested-user {:user nil})
+                 => [[:name "is required" [:user]]
+                     [:password "is required" [:user]]
+                     [:password "is too short" [:user]]
+                     [:password "must contain a number" [:user]]]
+               (validate-nested-user {:user {:name "" :password "Password"}})
+                 => [[:name "is required" [:user]]
+                     [:password "must contain a number" [:user]]]
+               (validate-nested-user {:user {:password "pass123"}})
+                 => [[:name "is required" [:user]]
+                     [:password "is too short" [:user]]]))
+       (let [validate-nested-profile (nested [:user :profile] (is-present :name))]
+         (fact "it can accept a lookup path as the first argument"
+               (validate-nested-profile {}) => [[:name "is required" [:user :profile]]]
+               (validate-nested-profile {:user {:profile {:name "Dianne"}}}) => [])))
